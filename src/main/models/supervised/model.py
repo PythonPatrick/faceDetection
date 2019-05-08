@@ -9,7 +9,7 @@ class Model:
     def __init__(self, data_dimension, data, epoche=100, learning_rate=0.1):
         self.sess=tf.Session()
         self.train_data = tf.placeholder(tf.float32, [None,data_dimension])
-        self.train_target= tf.placeholder(tf.float32, [None,1])
+        self.train_target= tf.placeholder(tf.float32, [None, 1])
         self.epoche = epoche
         self.data=data
         self.learning_rate = learning_rate
@@ -18,6 +18,7 @@ class Model:
         self.prediction
         self.cost
         self.optimize
+        self.error
 
     @lazy_property
     def prediction(self):
@@ -32,10 +33,14 @@ class Model:
         pass
 
     @lazy_property
+    def error(self):
+        pass
+
+    @lazy_property
     def training(self):
         self.sess.run(tf.global_variables_initializer())
         input, output = self.sess.run([self.data.x,self.data.y])
         for epoch in range(self.epoche):
             self.sess.run(self.optimize, {self.train_data: input, self.train_target: output})
-            error = self.sess.run(self.cost, {self.train_data: input, self.train_target: output})
-            print('Epoch {:2d} error {:f}'.format(epoch + 1, error))
+            error = self.sess.run(self.error, {self.train_data: input, self.train_target: output})
+            print('Epoch {:2d} error {}'.format(epoch + 1, error))

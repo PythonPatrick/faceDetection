@@ -18,7 +18,10 @@ def regression_data(TRUE_W, TRUE_b: float, NUM_EXAMPLES: int):
 
 def classification_data(**args):
     data=datasets.make_classification(**args)
-    return Input(tf.convert_to_tensor(data[0]), tf.convert_to_tensor(data[1]))
+    return Input(
+        x=tf.convert_to_tensor(data[0]),
+        y=tf.reshape(tf.convert_to_tensor(data[1]), [-1, 1])
+    )
 
 def printInput(prediction, input: Input):
     plt.scatter(input.x, input.y, c='b')
