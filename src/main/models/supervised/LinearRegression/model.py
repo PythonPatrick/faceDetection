@@ -22,6 +22,10 @@ class LinearRegression(Model):
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         return optimizer.minimize(self.cost)
 
+    @lazy_property
+    def error(self):
+        return self.cost
+
 
 if __name__ == '__main__':
     input = regression_data(TRUE_W=[[17.0], [4]],

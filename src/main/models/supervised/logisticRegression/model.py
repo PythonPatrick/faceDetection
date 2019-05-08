@@ -23,12 +23,23 @@ class LogisticRegression(Model):
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         return optimizer.minimize(self.cost)
 
+    @lazy_property
+    def error(self):
+        return tf.math.reduce_sum(self.cost)
+
+    @lazy_property
+    def accuracy(self):
+        correct_prediction = tf.equal(tf.round(self.prediction),self.train_target)
+        accuracy= tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+        input, output = self.sess.run([self.data.x, self.data.y])
+        return (self.sess.run(accuracy,  {self.train_data: input, self.train_target: output}))
 
 if __name__ == '__main__':
-    NUM_EXAMPLES = 1000
-    features=4
+    NUM_EXAMPLES = 100000
+    features=10
     dataSet = classification_data(n_samples=NUM_EXAMPLES, n_features=features)
 
-    model = LogisticRegression(data_dimension=features, data=dataSet,  epoche=300)
+    model = LogisticRegression(data_dimension=features, data=dataSet,  epoche=500)
     model.training
     print(model.sess.run([model.weights, model.bias]))
+    print(model.accuracy)
