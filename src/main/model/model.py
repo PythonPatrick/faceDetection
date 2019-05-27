@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 from src.main.utils.decorators import lazy_property
 from src.main.dataset.dataset import Dataset
+from keras.applications import vgg16
 
 
 class Config:
@@ -176,8 +177,32 @@ class Model:
         """
         # raise NotImplementedError("Each Model needs a test method.")
 
-    def save(self, link):
-        """Model output save.
+    def save(self,
+             link,
+             sess,
+             global_step=None,
+             latest_filename=None,
+             meta_graph_suffix="meta",
+             write_meta_graph=True,
+             write_state=True,
+             strip_default_attrs=False):
+        """Saves Model parameters
 
+        This method runs the ops added by the constructor for saving variables.
+        It requires a session in which the graph was launched.  The variables to
+        save must also have been initialized.
+
+        The method returns the path prefix of the newly created checkpoint files.
+        This string can be passed directly to a call to `restore()`.
         """
-        # raise NotImplementedError("Each Model needs a test method.")
+        save=tf.train.Saver()
+        save.save(
+            sess=sess,
+            save_path=link,
+            global_step=global_step,
+            latest_filename=latest_filename,
+            meta_graph_suffix=meta_graph_suffix,
+            write_meta_graph=write_meta_graph,
+            write_state=write_state,
+            strip_default_attrs=strip_default_attrs
+        )
