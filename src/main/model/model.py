@@ -2,8 +2,7 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 from src.main.utils.decorators import lazy_property
-from src.main.dataset.dataset import Dataset
-from keras.applications import vgg16
+from src.main.dataset.datasets import Datasets
 
 
 class Config:
@@ -73,7 +72,7 @@ class Model:
 
     """
 
-    def __init__(self, dataset: Dataset, config: Config, parameters: Parameters = Parameters()):
+    def __init__(self, dataset: Datasets, config: Config, parameters: Parameters = Parameters()):
         self.config = config
         self.parameters = parameters
         self.dataset = dataset
@@ -163,7 +162,7 @@ class Model:
            may be the accuracy.
            """
         for epoch in range(self.config.epoche):
-            session.run([self.dataset.features_op, self.dataset.target_op])
+            session.run([self.dataset.training_data_op])
             while True:
                 try:
                     _, error=session.run([self.optimization, self.error])
