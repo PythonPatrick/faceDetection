@@ -20,7 +20,7 @@ class LinearRegression(Model):
 
         This method returns the formula X*W+b, where X is just a batch of the data.
         """
-        return tf.add(tf.matmul(self.dataset.training_data[0], self.weights), self.bias) # returns: tf.Tensor
+        return tf.add(tf.matmul(self.dataset.training_data_next.feature, self.weights), self.bias) # returns: tf.Tensor
 
     @lazy_property
     @regularization
@@ -30,7 +30,7 @@ class LinearRegression(Model):
         This method returns the formula sum((X*W+b-Y)^2)/n, where X is just a batch of
         the feature data, Y is a batch of the target data, and n is the dimension.
         """
-        return tf.reduce_mean(tf.square(self.prediction - self.dataset.training_data[1]))/2
+        return tf.reduce_mean(tf.square(self.prediction - self.dataset.training_data_next.target))/2
 
     @lazy_property
     def optimization(self):

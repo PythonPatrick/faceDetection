@@ -2,6 +2,21 @@ import tensorflow as tf
 from tensorflow import Tensor
 from src.main.utils.decorators import lazy_property
 
+
+class UnzippedDataset():
+    def __init__(self, dataset):
+        self.dataset=dataset
+        self.feature
+        self.target
+
+    @lazy_property
+    def feature(self):
+        return self.dataset[0]
+
+    @lazy_property
+    def target(self):
+        return self.dataset[1]
+
 class Datasets(object):
     """Input pipeline using tf.data.dataset API
 
@@ -50,9 +65,12 @@ class Datasets(object):
     """
 
     def __init__(self, features: Tensor, target: Tensor,
+                 features_test: Tensor=None, target_test: Tensor=None,
                  batch_size=None, training_size=0.8):
         self.feature_data=features
         self.target_data=target
+        self.feature_data_test = features_test
+        self.target_data_test = target_test
         self.batch_size=batch_size
         self.training_size=training_size
         self.sample_size
@@ -109,9 +127,10 @@ class Datasets(object):
         Training dataset with size equal to the integer part of training
         size (percentaje of entire dataset) multiplied by dataset sample size.
         """
-        if self.batch_size is not None:
-            return self.dataset.take(self.training_sample_size).batch(self.batch_size)
-        return self.dataset.take(self.training_sample_size)
+        if self.feature_data_test is not None and self.target_data_test is not None:
+            return batch_dataset(self.batch_size, self.dataset)
+        else:
+            return batch_dataset(self.batch_size, self.dataset.take(self.training_sample_size))
 
     @lazy_property
     def training_data_op(self):
@@ -125,7 +144,8 @@ class Datasets(object):
         """Obtain next batch of training data
 
         """
-        return self.training_data_op.get_next()
+        return UnzippedDataset(self.training_data_op.get_next())
+
 
     @lazy_property
     def test_data(self):
@@ -134,7 +154,12 @@ class Datasets(object):
         Testing dataset with size equal to sample size minus the
         training dataset size.
         """
-        return self.dataset.skip(self.training_sample_size)
+        if self.feature_data_test is not None and self.target_data_test is not None:
+            feature = tf.data.Dataset.from_tensor_slices(self.feature_data_test)
+            target = tf.data.Dataset.from_tensor_slices(self.target_data_test)
+            return batch_dataset(1, tf.data.Dataset.zip((feature, target)))
+        else:
+            return  batch_dataset(1,self.dataset.skip(self.training_sample_size))
 
     @lazy_property
     def test_data_op(self):
@@ -148,4 +173,10 @@ class Datasets(object):
         """Obtain next batch of test data
 
         """
-        return self.test_data_op.get_next()
+        return UnzippedDataset(self.test_data_op.get_next())
+
+
+def batch_dataset(batch_size, dataset):
+    if batch_size is not None:
+        return dataset.batch(batch_size)
+    return dataset

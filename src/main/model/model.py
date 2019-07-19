@@ -162,7 +162,7 @@ class Model:
            may be the accuracy.
            """
         for epoch in range(self.config.epoche):
-            session.run([self.dataset.training_data_op])
+            session.run([self.dataset.training_data_op.initializer])
             while True:
                 try:
                     _, error=session.run([self.optimization, self.error])

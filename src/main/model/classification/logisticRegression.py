@@ -18,7 +18,7 @@ class LogisticRegression(Model):
         Returns:
             A Tensor with the same type as `x`.
         """
-        linear=tf.add(tf.matmul(self.dataset.features_batch, self.weights), self.bias)
+        linear=tf.add(tf.matmul(self.dataset.training_data_next.feature, self.weights), self.bias)
         return tf.nn.sigmoid(linear)
 
     @lazy_property
@@ -34,7 +34,7 @@ class LogisticRegression(Model):
             A `Tensor` of the same shape as `logits` with the componentwise logistic losses.
         """
         logits=self.prediction
-        labels=self.dataset.target_batch
+        labels=self.dataset.training_data_next.target
         return tf.nn.sigmoid_cross_entropy_with_logits(logits = logits, labels = labels)
 
     @lazy_property

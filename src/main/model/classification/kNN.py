@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from src.main.model.model import Model, Config, Parameters
 from src.main.utils.decorators import lazy_property
+from src.main.dataset.datasets import Datasets
 
 class kNearestNeighbors(object):
     """k-Nearest Neighbors Model implementation
@@ -27,40 +28,42 @@ class kNearestNeighbors(object):
 
     """
 
-    def __init__(self, dataset, distance, k):
+    def __init__(self, dataset: Datasets, distance, k):
         self.dataset = dataset
         self.distanceClass=distance
         self.k=k
-        self.distance
-        self.prediction
-        self.accuracy
 
 
-    @lazy_property
-    def distance(self):
+    def distance(self, feature):
         """k-Nearest Neighbor distance function
 
         """
-        return self.distanceClass.distance(self.dataset.feature_data, self.dataset.feature_data)
+        return self.distanceClass.distance(self.dataset.feature_data,feature)
 
 
-    @lazy_property
-    def prediction(self):
+    def prediction(self, feature):
         """k-Nearest Neighbor Hypothesis
 
         """
-        _, top_k_indices = tf.nn.top_k(tf.negative(self.distance), k=self.k)
+        _, top_k_indices = tf.nn.top_k(tf.negative(self.distance(feature)), k=self.k)
         top_k_label = tf.gather(self.dataset.target_data, top_k_indices)
+        labels, indexes, counts = tf.unique_with_counts(top_k_label)
+        return tf.gather(labels, tf.argmax(counts))
 
-        sum_up_predictions = tf.reduce_sum(top_k_label, axis=1)
-        return tf.argmax(sum_up_predictions, axis=1)
 
-
-    @lazy_property
     def accuracy(self, session):
         """k-Nearest Neighbor Model accuracy
 
         """
-        prediction, target=session.run([self.prediction, self.dataset.target_data])
-        accuracy = sum([1 if  pred == np.argmax(actual) else 0 for pred, actual in zip(prediction, target)])
-        return accuracy/len(prediction)
+        session.run([self.dataset.test_data_op.initializer])
+        sample_size=10000
+        num=0
+        while True:
+            try:
+                print("HOLA")
+                num+=1
+                print("prediction",session.run(self.prediction(self.dataset.test_data_next.feature)), num)
+                tf.reset_default_graph()
+            except tf.errors.OutOfRangeError:
+                break
+        return 0
