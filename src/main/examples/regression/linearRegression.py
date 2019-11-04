@@ -5,13 +5,13 @@ from src.main.dataset.inputdata import regression_data
 from src.main.model.functions.regularization import Ridge
 
 # model configurations
-config = Config(feature_num=2, batch_size=50, learning_rate=0.01, epoche=500)
+config = Config(feature_num=2, batch_size=500, learning_rate=0.01, epoche=500)
 
 # dataset
 dataset = regression_data(TRUE_W=[[17.0], [4]],
                           TRUE_b=4,
                           NUM_EXAMPLES=10000,
-                          batch_size=100)
+                          batch_size=1000)
 
 # implemented model
 sess = tf.Session()

@@ -7,8 +7,8 @@ from src.main.dataset.inputdata import classification_data
 config = Config(feature_num=10, batch_size=50, learning_rate=0.01)
 
 # dataset
-NUM_EXAMPLES=10000000
-dataset = classification_data(batch_size=1000000, n_samples=NUM_EXAMPLES, n_features=10)
+NUM_EXAMPLES=10000
+dataset = classification_data(batch_size=1000, n_samples=NUM_EXAMPLES, n_features=10)
 
 # model
 sess = tf.Session()
