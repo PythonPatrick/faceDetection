@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow import Tensor
 from functools import wraps
+from src.main.utils.decorators import lazy_property
 from src.main.utils.tensorflowUtils.distances import distances
 from src.main.utils.tensorflowUtils.tflow import Utils
 
@@ -11,6 +12,7 @@ class Kmean(object):
         self.samples = data
         self.n_clusters = n_clusters
         self.initialCentroids = initialCentroids
+        self.initializer = tf.global_variables_initializer()
 
     class IndexToSamplePoints(object):
         def __init__(self, flag):
@@ -43,31 +45,43 @@ class Kmean(object):
         initial_centroids = tf.gather(self.samples, centroid_indices)
         return initial_centroids
 
-    @property
+    @lazy_property
     def centroids(self):
         """
         Variable for centroids of K-mean model
         """
-        if self.initialCentroids:
+        if self.initialCentroids is not None:
             return tf.Variable(self.initialCentroids)
         else:
             return tf.Variable(self.random_centroids)
 
-    @property
+    @lazy_property
     def clusters(self):
         """
         Variable for cluster indices of K-mean model
         """
-        return tf.Variable(self.assign_to_nearest(self.centroids))
+        return tf.Variable(self.assign_to_nearest_initial(self.centroids.initialized_value()))
 
-    def assign_to_nearest(self, centroids):
+    def assign_to_nearest_initial(self, centroids):
         """
         Finds the nearest centroid for each sample
         """
         expanded_vectors = tf.cast(tf.expand_dims(self.samples, 0), tf.float64)
         expanded_centroids = tf.cast(tf.expand_dims(centroids, 1), tf.float64)
-        distances = tf.reduce_sum(tf.square(tf.subtract(expanded_vectors, expanded_centroids)), 2)
-        return tf.argmin(distances, 0)
+        dist = tf.reduce_sum(tf.square(tf.subtract(expanded_vectors, expanded_centroids)), 2)
+        return tf.argmin(dist, 0)
+
+    @lazy_property
+    def assign_to_nearest(self):
+        """
+        Finds the nearest centroid for each sample
+        """
+        expanded_vectors = tf.cast(tf.expand_dims(self.samples, 0), tf.float64)
+        expanded_centroids = tf.cast(tf.expand_dims(self.centroids, 1), tf.float64)
+        dist = tf.reduce_sum(tf.square(tf.subtract(expanded_vectors, expanded_centroids)), 2)
+        minDiff = tf.argmin(dist, 0)
+        # self.clusters.assign(minDiff)
+        return self.clusters.assign(minDiff)
 
     def update_centroids(self, nearest_indices):
         """
@@ -75,34 +89,23 @@ class Kmean(object):
         """
         nearest_indices = tf.cast(nearest_indices, tf.int32)
         partitions = tf.dynamic_partition(self.samples, nearest_indices, self.n_clusters)
-        new_centroids = tf.concat([tf.expand_dims(tf.reduce_mean(partition, 0), 0) for partition in partitions], 0)
-        return new_centroids
+        newCentroids = tf.concat([tf.expand_dims(tf.reduce_mean(partition, 0), 0) for partition in partitions], 0)
+        # with tf.control_dependencies([newCentroids]):
+        #     self.centroids.assign(newCentroids)
+        return self.centroids.assign(newCentroids)
 
-    def substituteEmptyCluster(self, clusters, centroid):
+    def substituteEmptyCluster(self, clusters, centroids, missing):
         """
         if there is an empty cluster, this empty cluster will be assigned with those point which is
         from the biggest cluster and most far away from its centroid.
         """
-        missing = self.missingCluster(clusters, centroid)
-
-        def changeInput(cluster, centroids):
-            biggestCluster = self.mayorCluster(cluster)
-            centroidBiggestCluster = tf.gather(centroids, biggestCluster)
-            clusterIdx = self.clusterPoints(clusters, biggestCluster)
-            point = self.pointMaximalDistanceInsideCluster(centroidBiggestCluster, clusterIdx, False)
-            pointValue = self.pointMaximalDistanceInsideCluster(centroidBiggestCluster, clusterIdx, True)
-            # return Utils.replaceValues(cluster, point, missing), Utils.replaceValues(centroids, missing, pointValue)
-            return cluster, tf.expand_dims(point, 0),  Utils.replaceValues(cluster, tf.expand_dims(point, 0), missing)
-
-        def changeNothing(cluster, centroids): return cluster, centroids, centroids
-
-        if tf.shape(missing)[0] != 0:
-            return changeInput(clusters, centroid)
-        return changeNothing(clusters, centroid)
-
-
-
-
+        biggestCluster = self.mayorCluster(clusters)
+        centroidBiggestCluster = tf.gather(centroids, biggestCluster)
+        clusterIdx = self.clusterPoints(clusters, biggestCluster)
+        point = self.pointMaximalDistanceInsideCluster(centroidBiggestCluster, clusterIdx, False)
+        pointValue = self.pointMaximalDistanceInsideCluster(centroidBiggestCluster, clusterIdx, True)
+        return Utils.replaceValues(clusters, tf.expand_dims(tf.expand_dims(point, 0), 0), missing), \
+                Utils.replaceRow(centroids, missing, tf.expand_dims(pointValue, 0))
 
 
 
@@ -144,22 +147,48 @@ class Kmean(object):
         index = distances.pointToMatrix(centroid, cluster)
         return tf.gather(clusterIdx, tf.argmax(index, 0))
 
-    @staticmethod
-    def condition(indices, centroids, i): return i < 0
+    # @staticmethod
+    # def condition(i): return lambda i:
 
     def training(self, initial_indices, initial_centroids):
         """
         iteration with training set
         """
-        indices = tf.Variable(tf.cast(initial_indices, tf.int64))
-        centroids = tf.Variable(initial_centroids)
+        # tf.Session().run(tf.compat.v1.global_variables_initializer())
+        # print(tf.Session().run(self.clusters))
 
-        def body(indices_inner, centroids_inner, i_inner):
-            ind = self.assign_to_nearest(centroids_inner)
-            cen = self.update_centroids(ind)
-            tf.print(i_inner.eval, [i_inner])
-            return ind, cen, i_inner + 1
+        def body(i_inner):
+            self.assign_to_nearest()
+            self.update_centroids(self.clusters)
+            ind_mod, cen_mod = self.substituteEmptyCluster(self.clusters, self.centroids)
+            # self.centroids.assign(cen_mod)
+            # self.clusters.assign(ind_mod)
+            return tf.add(i_inner, 1)
 
         i = tf.constant(0, tf.int32)
-        return tf.while_loop(self.condition, body, [indices, centroids, i])
+        def cond(i): return tf.less(i, 10)
+        return tf.while_loop(cond, body, [i])
 
+    def training2(self, session):
+        """
+        iteration with training set
+        """
+        # tf.Session().run(tf.compat.v1.global_variables_initializer())
+        # print(tf.Session().run(self.clusters))
+        all_variables_list = [self.centroids, self.clusters]
+        init_custom_op = tf.variables_initializer(var_list=all_variables_list)
+
+        session.run(init_custom_op)
+        for i in range(10):
+            a = session.run(self.assign_to_nearest)
+            b = session.run(self.update_centroids(self.clusters))
+            missing = self.missingCluster(self.clusters, self.centroids)
+            print("centroid", i, session.run(self.centroids))
+            print("cluster", i, session.run(self.clusters))
+            print("missing", i, session.run(tf.shape(missing)[0]), tf.shape(missing)[0] != 0, session.run(missing))
+
+            if session.run(tf.shape(missing)[0]) != 0:
+                ind_mod, cen_mod = self.substituteEmptyCluster(self.clusters, self.centroids, missing)
+                session.run(tf.group(self.centroids.assign(cen_mod), self.clusters.assign(ind_mod)))
+            print("modified centroid", i, session.run(self.centroids))
+            print("modified cluster", i, session.run(self.clusters))

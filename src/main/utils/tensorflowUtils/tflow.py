@@ -13,20 +13,29 @@ class Utils:
         :param values:
         :return:
         """
-        inputs = tf.cast(inputs, tf.float64)
         indices = tf.cast(indices, tf.int64)
-        values = tf.cast(values, tf.float64)
         # set elements in "indices" to 0's
         # one 0 for each element in "indices"
-        maskValues = tf.tile([0.0], [tf.shape(indices)[0]])
+        maskValues = tf.cast(tf.tile([0], [tf.shape(indices)[0]]), tf.int64)
         mask = tf.SparseTensor(indices, maskValues, tf.shape(inputs, out_type=tf.int64))
         # set values in coordinates in "indices" to 0's, leave everything else intact
-        maskedInput = tf.multiply(inputs, tf.cast(tf.sparse.to_dense(mask, default_value=1.0), tf.float64))
+        maskedInput = tf.multiply(inputs, tf.sparse.to_dense(mask, default_value=1))
 
         # replace elements in "indices" with "values"
         delta = tf.SparseTensor(indices, values, tf.shape(inputs, out_type=tf.int64))
         # add "values" to elements in "indices" (which are 0's so far)
         return tf.add(maskedInput, tf.sparse.to_dense(delta))
+
+    @staticmethod
+    def replaceRow(inputs, indices, row):
+        """
+
+        :param inputs:
+        :param indices:
+        :param row:
+        :return:
+        """
+        return tf.compat.v1.scatter_update(inputs, indices, row)
 
     @staticmethod
     def sparse_slice(indices, values, needed_row_ids):

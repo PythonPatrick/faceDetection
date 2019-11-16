@@ -2,6 +2,7 @@ import tensorflow as tf
 from src.main.model.model import Model, Config, Parameters
 from src.main.utils.decorators import lazy_property, regularization
 
+
 class LinearRegression(Model):
     """Linear Regression Model
 
@@ -20,7 +21,7 @@ class LinearRegression(Model):
 
         This method returns the formula X*W+b, where X is just a batch of the data.
         """
-        return tf.add(tf.matmul(self.dataset.training_data_next.feature, self.weights), self.bias) # returns: tf.Tensor
+        return tf.add(tf.matmul(self.dataset.training_data_next.feature, self.weights), self.bias)  # returns: tf.Tensor
 
     @lazy_property
     @regularization

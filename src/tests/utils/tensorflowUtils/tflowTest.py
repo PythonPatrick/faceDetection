@@ -14,6 +14,15 @@ class utilsTest(tf.compat.v1.test.TestCase):
             outs = utils.replaceValues(ins, ind, vals)
             self.assertAllEqual(outs.eval(), np.array([[4.0, 43.0, 45.0], [2.0, 45.0, 6664.0], [-4543.0, 0.0, 43.0]]))
 
+    def testReplaceRow(self):
+        with self.session() as sess:
+            ins = tf.Variable([[4.0, 43.0, 45.0], [2.0, 22.0, 6664.0], [-4543.0, 0.0, 43.0]], tf.float32)
+            ind = tf.convert_to_tensor([1], tf.int64)
+            vals = tf.convert_to_tensor([[45.0, 45.0, 45.0]], tf.float32)
+            sess.run(tf.compat.v1.global_variables_initializer())
+            outs = utils.replaceRow(ins, ind, vals)
+            self.assertAllEqual(outs.eval(), np.array([[4.0, 43.0, 45.0], [45.0, 45.0, 45.0], [-4543.0, 0.0, 43.0]]))
+
     def testSparseSlice(self):
         with self.session():
             indices = tf.constant([[0, 0], [1, 0], [2, 0], [2, 1], [2, 5]])
