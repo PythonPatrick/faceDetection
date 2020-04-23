@@ -16,15 +16,16 @@ def lazy_property(function):
 
 def regularization(function):
     @functools.wraps(function)
-    def wrapper(self,*args):
+    def wrapper(self, *args):
         if self.regularization is None:
             return function(self, *args)
         return tf.add(function(self, *args), self.regularization.regularization(self.weights))
     return wrapper
 
+
 def distance(function):
     @functools.wraps(function)
-    def wrapper(self,*args):
+    def wrapper(self, *args):
         if self.distance is None:
             return function(self, *args)
         return tf.add(function(self, *args), self.regularization.regularization(self.weights))

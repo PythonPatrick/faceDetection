@@ -76,12 +76,6 @@ class Model:
         self.config = config
         self.parameters = parameters
         self.dataset = dataset
-        self.weights
-        self.bias
-        self.prediction
-        self.cost
-        self.optimization
-        self.error
 
     @lazy_property
     def weights(self):

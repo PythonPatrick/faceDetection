@@ -3,10 +3,10 @@ import src.main.model.knn.nodes as nodes
 import numpy as np
 import time
 
-class KDTreeTest(tf.test.TestCase):
+class KDTreeTest(tf.compat.v1.test.TestCase):
 
     # def testDimension(self):
-    #     with self.test_session():
+    #     with self.session():
     #         input = tf.constant([[1., 1., 3.], [3., 23., 2.], [3., 23., 1000.]])
     #         tree=nodes.KDTree(input)
     #         dim, mean=tree.dimension
@@ -14,7 +14,7 @@ class KDTreeTest(tf.test.TestCase):
     #         self.assertAllEqual(mean.eval(), 335.)
     #
     # def testNode(self):
-    #     with self.test_session():
+    #     with self.session():
     #         input = tf.constant([[1., 1., 3.], [3., 23., 2.], [3., 23., 1000.]])
     #         tree=nodes.KDTree(input)
     #         self.assertAllEqual(tree.node.left.eval(), np.array([[ 1.,  1.,  3.],[ 3., 23.,  2.]]))
@@ -23,7 +23,7 @@ class KDTreeTest(tf.test.TestCase):
     #         self.assertAllEqual(tree.node.mean, 335.)
 
     def testNode1(self):
-        with self.test_session():
+        with self.session():
             data=np.random.rand(10000,3)
             input = tf.convert_to_tensor(data)
             start_time = time.time()
@@ -33,7 +33,7 @@ class KDTreeTest(tf.test.TestCase):
             print(tree.size)
 
     # def testNode2(self):
-    #     with self.test_session():
+    #     with self.session():
     #         data=np.random.rand(30000,3)
     #         input = tf.convert_to_tensor(data)
     #         start_time = time.time()
@@ -43,7 +43,7 @@ class KDTreeTest(tf.test.TestCase):
     #         print(tree.size)
     #
     # def testNode3(self):
-    #     with self.test_session():
+    #     with self.session():
     #         data=np.random.rand(40000,3)
     #         input = tf.convert_to_tensor(data)
     #         start_time = time.time()
@@ -53,7 +53,7 @@ class KDTreeTest(tf.test.TestCase):
     #         print(tree.size)
     #
     # def testNode(self):
-    #     with self.test_session():
+    #     with self.session():
     #         data=np.random.rand(1000,3)
     #         input = tf.convert_to_tensor(data)
     #         start_time = time.time()
